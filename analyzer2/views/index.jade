@@ -1,0 +1,11 @@
+extends layout
+
+block header
+  script(src="javascripts/jquery-1.12.1.js")
+  script(src="javascripts/Chart.js")
+  script(src="javascripts/interact.js")
+
+block content
+  //p= data
+  div
+    canvas(id="myChart", width="400", height="400")
