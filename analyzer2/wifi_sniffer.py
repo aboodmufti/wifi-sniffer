@@ -70,7 +70,7 @@ while True :
 		addr5 = hex(unpack('<B',pkt[radio_length+14])[0])[2:]
 		addr6 = hex(unpack('<B',pkt[radio_length+15])[0])[2:]
 		addr = "%s:%s:%s:%s:%s:%s" %(addr1,addr2,addr3,addr4,addr5,addr6)
-		json += "MAC_ADDRESS: '%s:%s:%s:%s:%s:%s' ," %(addr1,addr2,addr3,addr4,addr5,addr6)
+		json += "\"MAC_ADDRESS\": \"%s:%s:%s:%s:%s:%s\" ," %(addr1,addr2,addr3,addr4,addr5,addr6)
 		
 		beaconFrame = pkt[radio_length+36:]
 		
@@ -82,8 +82,8 @@ while True :
 				char = unpack('<c',beaconFrame[2+j])[0]
 				ssid_name += "%s" %char
 			json += "\"SSID\" : \"%s\" }" %ssid_name
-			if addr not in ap_list:
-				ssid_list.add(ssid_name)
-				ap_list.add(addr)
-				print json 
+			#if addr not in ap_list:
+				#ssid_list.add(ssid_name)
+			#ap_list.add(addr)
+			print json 
             

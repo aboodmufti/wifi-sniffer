@@ -6,8 +6,9 @@ var pyshell = new PythonShell('wifi_sniffer.py');
 var allData = []
 pyshell.on('message', function (message) {
     // received a message sent from the Python script (a simple "print" statement) 
+    var obj = JSON.parse(message)
     //console.log(JSON.parse(message))
-    allData.push(JSON.parse(message))
+    allData.push(obj)
     
 });
   
@@ -18,6 +19,7 @@ router.get('/', function(req, res, next) {
 
 router.get('/data', function(req, res, next) {
   res.json(allData)
+  //console.log(allData)
   allData = []
 });
 
