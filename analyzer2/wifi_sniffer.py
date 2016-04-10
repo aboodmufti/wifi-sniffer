@@ -26,7 +26,7 @@ ap_list = set()
 ssid_list = set()
 while True :
   pkt = rawSocket.recv(4096)
-  
+  #print "Got One!"
   if pkt[0] == "\x00" : 
     radio_version = unpack('<B',pkt[0])[0]
     radio_pad = unpack('<B',pkt[1])[0]

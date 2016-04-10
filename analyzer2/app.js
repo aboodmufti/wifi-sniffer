@@ -22,7 +22,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 var PythonShell = require("python-shell")
 var pyshell = new PythonShell('wifi_sniffer.py');
-var serverData = []
+var chartData = []
+var tableData = []
 var message = ""
 pyshell.on('message', function (message) {
     // received a message sent from the Python script (a simple "print" statement) 
@@ -30,7 +31,9 @@ pyshell.on('message', function (message) {
     if(message.substr(0,2) == "{\""  && message.substr(-3) == "\" }"){
       try{
         var obj = JSON.parse(message)
-        serverData.push(obj)
+
+        chartData.push(obj)
+        tableData.push(obj)
       }catch(e){
         console.log(e.message);
       }
@@ -38,58 +41,211 @@ pyshell.on('message', function (message) {
     
     
 });
-
-
-app.get("/data", function(req, res) {
-
-  
-  var finalData = {
-        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "],
-        datasets: []
-    };
-    
-  var unique_AP = []
-  function inUnique(BSSID){
+var unique_AP_table = []
+var unique_SSID_table = []
+app.get("/dataTable", function(req, res) {
+  var groupType = req.query.grouping
+  //var unique_AP_table = []
+  function inUniqueMAC(BSSID){
       
-      for(var i = 0; i<unique_AP.length; ++i){
-          /*if(unique_AP[i] && BSSID == unique_AP[i].SSID){
+      for(var i = 0; i<unique_AP_table.length; ++i){
+          /*if(unique_SSID_table[i] && SSID == unique_SSID_table[i].SSID){
               return [true,i]
           }*/
-          if(unique_AP[i] && BSSID == unique_AP[i].MAC_ADDRESS){
+          if(unique_AP_table[i] && BSSID == unique_AP_table[i].MAC_ADDRESS){
               return [true,i]
           }
       }
       return [false,null] 
   }
   
-  for(var i = 0; i<serverData.length; ++i){
-      currData = serverData[i]
+  function inUniqueSSID(SSID){
+      
+      for(var i = 0; i<unique_SSID_table.length; ++i){
+          if(unique_SSID_table[i] && SSID == unique_SSID_table[i].SSID){
+              return [true,i]
+          }
+      }
+      return [false,null] 
+  }
+  var ssidDidNotChange = true
+  for(var i = 0; i<tableData.length; ++i){
+      currData = tableData[i]
       //exists = inUnique(currData.SSID)
-      exists = inUnique(currData.MAC_ADDRESS)
-      oldID = exists[1]
+      existsMAC = inUniqueMAC(currData.MAC_ADDRESS)
+      existsSSID = inUniqueSSID(currData.SSID)
+      oldIDMAC = existsMAC[1]
+      oldIDSSID = existsSSID[1]
       if(currData.CHANNEL > 11){
           continue
       }
-      if(exists[0]){
-          //if(currData.SIGNAL < unique_AP[oldID]){
-              unique_AP[oldID].SIGNAL = currData.SIGNAL
+      if(existsMAC[0]){
+          //if(currData.SIGNAL < unique_AP_table[oldID]){
+              unique_AP_table[oldIDMAC].SIGNAL = currData.SIGNAL
+              unique_AP_table[oldIDMAC].count = 0
           //}
       }else{
           //if(currData != undefined){
-            unique_AP.push(currData)
+            currData.count = 0
+            unique_AP_table.push(currData)
           //}
+      }
+
+      if(existsSSID[0]){
+          unique_SSID_table[oldIDSSID].count = 0
+          if(currData.SIGNAL < unique_AP_table[oldIDSSID]){
+            unique_SSID_table[oldIDSSID].SIGNAL = currData.SIGNAL
+          }
+      }else{
+            currData.count = 0
+            unique_SSID_table.push(currData)
       }   
   }
   
-  for(var i = 0; i<unique_AP.length; ++i){
+  for(var i = 0; i<unique_AP_table.length; ++i){
+    if(unique_AP_table[i].count >=10){
+      unique_AP_table.splice(i,1)
+      console.log("removed")
+    }
+    
+  }
+
+  for(var i = 0; i<unique_SSID_table.length; ++i){
+    if(unique_SSID_table[i].count >=10){
+      unique_SSID_table.splice(i,1)
+      console.log("removed")
+    }
+    
+  }
+
+  
+
+  function sortSignal(a,b){
+    if(a.SIGNAL < b.SIGNAL){
+      return 1
+    }else  if(a.SIGNAL > b.SIGNAL){
+      return -1
+    }
+    return -1
+  }
+
+  //console.log(unique_AP_table)
+  unique_AP_table = unique_AP_table.sort(sortSignal)
+
+  for(var i = 0; i<unique_AP_table.length; ++i){
+    unique_AP_table[i].count++
+  }
+  for(var i = 0; i<unique_SSID_table.length; ++i){
+    unique_SSID_table[i].count++
+  }
+
+  if(groupType == "ssid"){
+    res.send(unique_SSID_table)
+  }else{
+    res.send(unique_AP_table)
+  }
+  tableData = []
+})
+
+
+var unique_AP_chart = []
+var unique_SSID_chart = []
+
+app.get("/data", function(req, res) {
+
+  var finalData_AP = {
+        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "],
+        datasets: []
+    };
+
+  var finalData_SSID = {
+        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "],
+        datasets: []
+    };
+    
+  var groupType = req.query.grouping
+  //var unique_AP_chart = []
+  function inUniqueMAC(BSSID){
+      
+      for(var i = 0; i<unique_AP_chart.length; ++i){
+          /*if(unique_SSID_chart[i] && SSID == unique_SSID_chart[i].SSID){
+              return [true,i]
+          }*/
+          if(unique_AP_chart[i] && BSSID == unique_AP_chart[i].MAC_ADDRESS){
+              return [true,i]
+          }
+      }
+      return [false,null] 
+  }
+  
+  function inUniqueSSID(SSID){
+      
+      for(var i = 0; i<unique_SSID_chart.length; ++i){
+          if(unique_SSID_chart[i] && SSID == unique_SSID_chart[i].SSID){
+              return [true,i]
+          }
+      }
+      return [false,null] 
+  }
+  var ssidDidNotChange = true
+  for(var i = 0; i<chartData.length; ++i){
+      currData = chartData[i]
+      //exists = inUnique(currData.SSID)
+      existsMAC = inUniqueMAC(currData.MAC_ADDRESS)
+      existsSSID = inUniqueSSID(currData.SSID)
+      oldIDMAC = existsMAC[1]
+      oldIDSSID = existsSSID[1]
+      if(currData.CHANNEL > 11){
+          continue
+      }
+      if(existsMAC[0]){
+          //if(currData.SIGNAL < unique_AP_chart[oldID]){
+              unique_AP_chart[oldIDMAC].SIGNAL = currData.SIGNAL
+              unique_AP_chart[oldIDMAC].count = 0
+          //}
+      }else{
+          //if(currData != undefined){
+            currData.count = 0
+            unique_AP_chart.push(currData)
+          //}
+      }
+
+      if(existsSSID[0]){
+          unique_SSID_chart[oldIDSSID].count = 0
+          if(currData.SIGNAL < unique_AP_chart[oldIDSSID]){
+            unique_SSID_chart[oldIDSSID].SIGNAL = currData.SIGNAL
+          }
+      }else{
+            currData.count = 0
+            unique_SSID_chart.push(currData)
+      }   
+  }
+  
+  for(var i = 0; i<unique_AP_chart.length; ++i){
+    if(unique_AP_chart[i].count >=10){
+      unique_AP_chart.splice(i,1)
+      console.log("removed")
+    }
+    
+  }
+
+  for(var i = 0; i<unique_SSID_chart.length; ++i){
+    if(unique_SSID_chart[i].count >=10){
+      unique_SSID_chart.splice(i,1)
+      console.log("removed")
+    }
+    
+  }
+  
+  for(var i = 0; i<unique_AP_chart.length; ++i){
       var values = []
-      if(unique_AP[i] == undefined){
+      if(unique_AP_chart[i] == undefined){
         continue  
       }
-      var channel = unique_AP[i].CHANNEL
+      var channel = unique_AP_chart[i].CHANNEL
       channel += 1
       for(var j = 0 ; j<15; ++j){
-          var currSignal = unique_AP[i].SIGNAL
+          var currSignal = unique_AP_chart[i].SIGNAL
           
           if(j == channel - 2){
               values.push(-100)
@@ -113,17 +269,70 @@ app.get("/data", function(req, res) {
       var g = Math.floor((Math.random() * 220) + 20).toString();
       var b = Math.floor((Math.random() * 220) + 20).toString();
       var dataset = {
-          label: unique_AP[i].SSID +" - "+unique_AP[i].MAC_ADDRESS.substring(0,5) ,
+          label: unique_AP_chart[i].SSID +" - "+unique_AP_chart[i].MAC_ADDRESS.substring(0,5) ,
           fillColor: "rgba("+r+","+g+","+b+",0.3)",
           strokeColor: "rgba("+r+","+g+","+b+",0.9)",
           data: values
       }
-      finalData.datasets.push(dataset)
+      finalData_AP.datasets.push(dataset)
   }
+
+  for(var i = 0; i<unique_SSID_chart.length; ++i){
+      var values = []
+      if(unique_SSID_chart[i] == undefined){
+        continue  
+      }
+      var channel = unique_SSID_chart[i].CHANNEL
+      channel += 1
+      for(var j = 0 ; j<15; ++j){
+          var currSignal = unique_SSID_chart[i].SIGNAL
+          
+          if(j == channel - 2){
+              values.push(-100)
+          }else if(j == channel - 1){
+              values.push(null)
+          }else if(j ==  channel){
+              values.push(currSignal)
+          }else if(j ==  channel +1){
+              values.push(null)
+          }else if(j ==  channel +2){
+              values.push(-100)
+          }else{
+              values.push(null)
+          }
+      }
+      /*
+        highlightFill: "rgba("+r+","+g+","+b+",0.75)",
+        highlightStroke: "rgba("+r+","+g+","+b+",1)",
+       * */
+      var r = Math.floor((Math.random() * 220) + 20).toString();
+      var g = Math.floor((Math.random() * 220) + 20).toString();
+      var b = Math.floor((Math.random() * 220) + 20).toString();
+      var dataset = {
+          label: unique_SSID_chart[i].SSID  ,
+          fillColor: "rgba("+r+","+g+","+b+",0.3)",
+          strokeColor: "rgba("+r+","+g+","+b+",0.9)",
+          data: values
+      }
+      finalData_SSID.datasets.push(dataset)
+  }
+
+  for(var i = 0; i<unique_AP_chart.length; ++i){
+    unique_AP_chart[i].count++
+  }
+  for(var i = 0; i<unique_SSID_chart.length; ++i){
+    unique_SSID_chart[i].count++
+  }
+
   //console.log(finalData.datasets)
-  res.send(finalData)
+  if(groupType == "ssid"){
+    res.send(finalData_SSID)
+  }else{
+    res.send(finalData_AP)
+  }
   
-  finalData = []
+  finalData_AP = []
+  finalData_SSID = []
 
 })
   
@@ -149,6 +358,7 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
+    console.log(err)
     res.render('error', {
       message: err.message,
       error: err
@@ -160,6 +370,7 @@ if (app.get('env') === 'development') {
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
+  console.log(err)
   res.render('error', {
     message: err.message,
     error: {}

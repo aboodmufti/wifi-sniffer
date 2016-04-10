@@ -6,7 +6,23 @@ block header
   script(src="javascripts/interact.js")
 
 block content
-  //p= data
-  button#scan Refresh
+  form#groupForm
+      input(type="radio", name="grouping",value="ssid",checked) 
+      |group by SSID 
+      br
+      
+      input(type="radio", name="grouping",value="mac") 
+      |group by MAC Address 
+  
+  br
+  br
+  button.scan Refresh
   div
     canvas(id="myChart", width="400", height="400")
+  
+  button.scan Refresh
+  br
+  br
+  div#table
+  br
+  button.scan Refresh
