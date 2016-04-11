@@ -43,6 +43,11 @@ pyshell.on('message', function (message) {
 });
 var unique_AP_table = []
 var unique_SSID_table = []
+
+function getMaxOfArray(numArray) {
+    return Math.max.apply(null, numArray);
+  }
+  
 app.get("/dataTable", function(req, res) {
   var groupType = req.query.grouping
   //var unique_AP_table = []
@@ -59,6 +64,7 @@ app.get("/dataTable", function(req, res) {
       return [false,null] 
   }
   
+
   function inUniqueSSID(SSID){
       
       for(var i = 0; i<unique_SSID_table.length; ++i){
@@ -69,6 +75,7 @@ app.get("/dataTable", function(req, res) {
       return [false,null] 
   }
   var ssidDidNotChange = true
+  var allSignals ={}
   for(var i = 0; i<tableData.length; ++i){
       currData = tableData[i]
       //exists = inUnique(currData.SSID)
@@ -93,15 +100,21 @@ app.get("/dataTable", function(req, res) {
 
       if(existsSSID[0]){
           unique_SSID_table[oldIDSSID].count = 0
-          if(currData.SIGNAL < unique_AP_table[oldIDSSID]){
-            unique_SSID_table[oldIDSSID].SIGNAL = currData.SIGNAL
+          if(allSignals[unique_SSID_table[oldIDSSID].SSID]){
+            allSignals[unique_SSID_table[oldIDSSID].SSID].push(currData.SIGNAL)
+          }else{
+            allSignals[unique_SSID_table[oldIDSSID].SSID] = [currData.SIGNAL]
           }
+
+          //if(currData.SIGNAL < unique_SSID_table[oldIDSSID].SIGNAL){
+          unique_SSID_table[oldIDSSID].SIGNAL = getMaxOfArray(allSignals[unique_SSID_table[oldIDSSID].SSID])
+          //}
       }else{
             currData.count = 0
             unique_SSID_table.push(currData)
       }   
   }
-  
+  //console.log(allSignals)
   for(var i = 0; i<unique_AP_table.length; ++i){
     if(unique_AP_table[i].count >=10){
       unique_AP_table.splice(i,1)
@@ -150,7 +163,7 @@ app.get("/dataTable", function(req, res) {
 
 var unique_AP_chart = []
 var unique_SSID_chart = []
-
+var allSignalsSSD = {}
 app.get("/data", function(req, res) {
 
   var finalData_AP = {
@@ -212,9 +225,12 @@ app.get("/data", function(req, res) {
 
       if(existsSSID[0]){
           unique_SSID_chart[oldIDSSID].count = 0
-          if(currData.SIGNAL < unique_AP_chart[oldIDSSID]){
-            unique_SSID_chart[oldIDSSID].SIGNAL = currData.SIGNAL
+          if(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID]){
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].push(currData.SIGNAL)
+          }else{
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID] = [currData.SIGNAL]
           }
+          unique_SSID_chart[oldIDSSID].SIGNAL = getMaxOfArray(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID])
       }else{
             currData.count = 0
             unique_SSID_chart.push(currData)
@@ -272,8 +288,11 @@ app.get("/data", function(req, res) {
           label: unique_AP_chart[i].SSID +" - "+unique_AP_chart[i].MAC_ADDRESS.substring(0,5) ,
           fillColor: "rgba("+r+","+g+","+b+",0.3)",
           strokeColor: "rgba("+r+","+g+","+b+",0.9)",
+          pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
+          pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
           data: values
       }
+
       finalData_AP.datasets.push(dataset)
   }
 
@@ -312,6 +331,8 @@ app.get("/data", function(req, res) {
           label: unique_SSID_chart[i].SSID  ,
           fillColor: "rgba("+r+","+g+","+b+",0.3)",
           strokeColor: "rgba("+r+","+g+","+b+",0.9)",
+          pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
+          pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
           data: values
       }
       finalData_SSID.datasets.push(dataset)
