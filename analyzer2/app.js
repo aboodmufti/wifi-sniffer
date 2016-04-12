@@ -47,7 +47,7 @@ var unique_SSID_table = []
 function getMaxOfArray(numArray) {
     return Math.max.apply(null, numArray);
   }
-  
+
 app.get("/dataTable", function(req, res) {
   var groupType = req.query.grouping
   //var unique_AP_table = []
@@ -83,8 +83,11 @@ app.get("/dataTable", function(req, res) {
       existsSSID = inUniqueSSID(currData.SSID)
       oldIDMAC = existsMAC[1]
       oldIDSSID = existsSSID[1]
-      if(currData.CHANNEL > 11){
+      /*if(currData.CHANNEL > 11){
           continue
+      }*/
+      if(currData.CHANNEL > 11){
+          console.log(currData)
       }
       if(existsMAC[0]){
           //if(currData.SIGNAL < unique_AP_table[oldID]){
@@ -163,7 +166,7 @@ app.get("/dataTable", function(req, res) {
 
 var unique_AP_chart = []
 var unique_SSID_chart = []
-var allSignalsSSD = {}
+
 app.get("/data", function(req, res) {
 
   var finalData_AP = {
@@ -201,6 +204,7 @@ app.get("/data", function(req, res) {
       return [false,null] 
   }
   var ssidDidNotChange = true
+  var allSignalsSSD = {}
   for(var i = 0; i<chartData.length; ++i){
       currData = chartData[i]
       //exists = inUnique(currData.SSID)
@@ -286,7 +290,7 @@ app.get("/data", function(req, res) {
       var b = Math.floor((Math.random() * 220) + 20).toString();
       var dataset = {
           label: unique_AP_chart[i].SSID +" - "+unique_AP_chart[i].MAC_ADDRESS.substring(0,5) ,
-          fillColor: "rgba("+r+","+g+","+b+",0.3)",
+          fillColor: "rgba("+r+","+g+","+b+",0)",
           strokeColor: "rgba("+r+","+g+","+b+",0.9)",
           pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
           pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
@@ -329,7 +333,7 @@ app.get("/data", function(req, res) {
       var b = Math.floor((Math.random() * 220) + 20).toString();
       var dataset = {
           label: unique_SSID_chart[i].SSID  ,
-          fillColor: "rgba("+r+","+g+","+b+",0.3)",
+          fillColor: "rgba("+r+","+g+","+b+",0)",
           strokeColor: "rgba("+r+","+g+","+b+",0.9)",
           pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
           pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
@@ -357,13 +361,27 @@ app.get("/data", function(req, res) {
 
 })
   
+//setInterval(clearContainers, 20000);
+
+function clearContainers(){
+  chartData = []
+  tableData = []
+  unique_AP_chart = []
+  unique_SSID_chart = []
   
+  unique_AP_table = []
+  unique_SSID_table = []
+}
+
 app.get('/', function(req, res, next) {
-  console.log("DEBUG 1")
-  res.render('index', { title: 'Express' });
+  res.render('index', { title: 'Wifi Analyzer' });
+});
+
+app.get('/5', function(req, res, next) {
+  res.render('index5', { title: 'Wifi Analyzer' });
 });
 //app.use('/index', routes);
-app.use('/users', users);
+//app.use('/users', users);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

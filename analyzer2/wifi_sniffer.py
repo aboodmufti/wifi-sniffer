@@ -1,6 +1,9 @@
 import socket 
 from struct import *
 
+from subprocess import Popen
+p = Popen(['python channel_changer.py'],shell=True)
+
 flags = ["TSFT","FLAGS","RATE","CHANNEL","FHSS","ANTENNA_SIGNAL","ANTENNA NOISE","LOCK QUALITY","TX ATTENUATION","DB TX ATTENUATION","DBM TX POWER","ANTENNA","DB ANTENNA SIGNAL","DB ANTENNA NOISE","RX FLAGS", "B15", "B16", "B17", "B18", "MCS","A-MPDU STATUS", "VHT","B22","B23","B24","B25","B26","B27","B28","B29","B30","B30","B31"]
 
 flags_sizes = [8,1,1,4,2,1,1,2,2,2,1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
@@ -21,7 +24,7 @@ def getCharAt(str,i):
 
 #sudo airmon-ng start wlan0
 rawSocket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003))
-rawSocket.bind(("mon0", 0x0003))
+rawSocket.bind(("wlan0", 0x0003))
 ap_list = set()
 ssid_list = set()
 while True :
@@ -56,6 +59,7 @@ while True :
               if raw_channel == frequencies_5[i]:
                 json += "\"CHANNEL\" : %s ," %channels_5[i]
                 found = True
+                #print "Got one 5GHz"
                 break
         offset += flags_sizes[i]
       
