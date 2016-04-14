@@ -40,17 +40,8 @@ $(function () {
           }else{
             if(newChart){
               newChart.detach()
-            }/*
-            for(var i = 0; i < serverData.series.length; ++i){
-              var data = []
-              var currData = serverData.series[i].data
-              for(var j = 0; j < currData.length; ++j){
-                if(currData[j] != null){
-                  data[j] = currData[j]
-                }
-              }
-              serverData.series[i].data = data
-            }*/
+            }
+
             for(var i = 0; i < serverData.series.length; ++i){
               var data = []
               var currData = serverData.series[i]
@@ -61,13 +52,11 @@ $(function () {
               }
               serverData.series[i] = data
             }
-            //console.log(serverData)
             newChart = new Chartist.Line('.ct-chart', serverData, {
                       fullWidth: true,
                       chartPadding: {
                         right: 40}
                       });
-            //myBarChart = new Chart(ctx).Line(serverData, {animation:false,pointDot : false});
           }
       });
       updateTable()

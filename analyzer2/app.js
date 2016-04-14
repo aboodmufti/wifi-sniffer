@@ -26,37 +26,35 @@ var chartData = []
 var tableData = []
 var message = ""
 pyshell.on('message', function (message) {
-    // received a message sent from the Python script (a simple "print" statement) 
-
     if(message.substr(0,2) == "{\""  && message.substr(-3) == "\" }"){
       try{
         var obj = JSON.parse(message)
-
         chartData.push(obj)
         tableData.push(obj)
       }catch(e){
         console.log(e.message);
       }
     }
-    
-    
+
 });
-var unique_AP_table = []
-var unique_SSID_table = []
+
 
 function getMaxOfArray(numArray) {
     return Math.max.apply(null, numArray);
+}
+
+var unique_AP_table = []
+var unique_SSID_table = []
+app.get("/dataTable", function(req, res) {
+  if(tableData[i] && tableData[i].CHANNEL == 1 ){
+    tableData = []
   }
 
-app.get("/dataTable", function(req, res) {
   var groupType = req.query.grouping
-  //var unique_AP_table = []
+
   function inUniqueMAC(BSSID){
       
       for(var i = 0; i<unique_AP_table.length; ++i){
-          /*if(unique_SSID_table[i] && SSID == unique_SSID_table[i].SSID){
-              return [true,i]
-          }*/
           if(unique_AP_table[i] && BSSID == unique_AP_table[i].MAC_ADDRESS){
               return [true,i]
           }
@@ -74,50 +72,46 @@ app.get("/dataTable", function(req, res) {
       }
       return [false,null] 
   }
+
   var ssidDidNotChange = true
   var allSignals ={}
+  /*
+  This for loop is populating unique ssid and mac addresses
+  */
   for(var i = 0; i<tableData.length; ++i){
       currData = tableData[i]
-      //exists = inUnique(currData.SSID)
       existsMAC = inUniqueMAC(currData.MAC_ADDRESS)
       existsSSID = inUniqueSSID(currData.SSID)
       oldIDMAC = existsMAC[1]
       oldIDSSID = existsSSID[1]
-      /*if(currData.CHANNEL > 11){
-          continue
-      }*/
-      if(currData.CHANNEL > 11){
-          //console.log(currData)
-      }
+
       if(existsMAC[0]){
-          //if(currData.SIGNAL < unique_AP_table[oldID]){
-              unique_AP_table[oldIDMAC].SIGNAL = currData.SIGNAL
-              unique_AP_table[oldIDMAC].count = 0
-          //}
+            unique_AP_table[oldIDMAC].SIGNAL = currData.SIGNAL
+            unique_AP_table[oldIDMAC].count = 0
       }else{
-          //if(currData != undefined){
             currData.count = 0
             unique_AP_table.push(currData)
-          //}
       }
 
       if(existsSSID[0]){
           unique_SSID_table[oldIDSSID].count = 0
+
           if(allSignals[unique_SSID_table[oldIDSSID].SSID]){
             allSignals[unique_SSID_table[oldIDSSID].SSID].push(currData.SIGNAL)
           }else{
             allSignals[unique_SSID_table[oldIDSSID].SSID] = [currData.SIGNAL]
           }
 
-          //if(currData.SIGNAL < unique_SSID_table[oldIDSSID].SIGNAL){
           unique_SSID_table[oldIDSSID].SIGNAL = getMaxOfArray(allSignals[unique_SSID_table[oldIDSSID].SSID])
-          //}
       }else{
             currData.count = 0
             unique_SSID_table.push(currData)
       }   
   }
-  //console.log(allSignals)
+
+  /*
+  These for loops are eliminating all unique ssid or AP that have been there for 10 rounds
+  */
   for(var i = 0; i<unique_AP_table.length; ++i){
     if(unique_AP_table[i].count >=10){
       unique_AP_table.splice(i,1)
@@ -134,8 +128,6 @@ app.get("/dataTable", function(req, res) {
     
   }
 
-  
-
   function sortSignal(a,b){
     if(a.SIGNAL < b.SIGNAL){
       return 1
@@ -145,9 +137,10 @@ app.get("/dataTable", function(req, res) {
     return -1
   }
 
-  //console.log(unique_AP_table)
+  //sort based on signal
   unique_AP_table = unique_AP_table.sort(sortSignal)
 
+  //incrementing count for every unique ssid and AP
   for(var i = 0; i<unique_AP_table.length; ++i){
     unique_AP_table[i].count++
   }
@@ -168,25 +161,15 @@ var unique_AP_chart = []
 var unique_SSID_chart = []
 
 app.get("/data", function(req, res) {
-/*
+
   var finalData_AP = {
-        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," ",36,"",38," ",40," ",42," ",44," ",46,"",48," "," ",149," ",151," ",153," ",155," ",157," ",159," ",161," "," "," ",165," "," "," "],
-        datasets: []
-    };
-    */
-  var finalData_AP = {
-            labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "," "," "," "," ",36,"",38," ",40," ",42," ",44," ",46,"",48," "," ",149," ",151," ",153," ",155," ",157," ",159," ",161," "," "," ",165," "," "," "],
+            labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "," "," "," "," ",36,"",38," ",40," ",42," ",44," ",46,"",48," "," "," "," "," ",149," ",151," ",153," ",155," ",157," ",159," ",161," "," "," ",165," "," "," "],
             series: []
           }
-/*
-  var finalData_SSID = {
-        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "],
-        datasets: []
-    };*/
-    var finalData_SSID = []
+  var finalData_SSID = []
     
   var groupType = req.query.grouping
-  //var unique_AP_chart = []
+
   function inUniqueMAC(BSSID){
       
       for(var i = 0; i<unique_AP_chart.length; ++i){
@@ -281,67 +264,34 @@ app.get("/data", function(req, res) {
           }else if((channel >30 && channel <= 149) || channel == 157 || channel == 153 || channel > 160){
             if(finalData_AP.labels[j] == channel){
               values[j] = currSignal
-              values[j+1] = -100
-              values[j-1] = -100
+              values[j+2] = -100
+              values[j-2] = -100
             }
           }else{
             if(channel == 151){
               if(finalData_AP.labels[j] == channel){
                 values[j] = currSignal
-                values[j+2] = -100
-                values[j-2] = -100
+                values[j+4] = -100
+                values[j-4] = -100
               }
             }else if(channel == 155){
               if(finalData_AP.labels[j] == channel){
                 values[j] = currSignal
-                values[j+1] = -100
-                values[j-4] = -100
+                values[j+2] = -100
+                values[j-8] = -100
               }
             }else if(channel == 159){
               if(finalData_AP.labels[j] == channel){
                 values[j] = currSignal
-                values[j+1] = -100
-                values[j-2] = -100
+                values[j+2] = -100
+                values[j-4] = -100
               }
             }
           }
-
-
-          /*
-          if(j == channel - 2){
-              values.push(-100)
-          }else if(j == channel - 1){
-              values.push(null)
-          }else if(j ==  channel){
-              values.push(currSignal)
-          }else if(j ==  channel +1){
-              values.push(null)
-          }else if(j ==  channel +2){
-              values.push(-100)
-          }else{
-              values.push(null)
-          }*/
       }
-      /*
-        highlightFill: "rgba("+r+","+g+","+b+",0.75)",
-        highlightStroke: "rgba("+r+","+g+","+b+",1)",
-       * */
-      /*var r = Math.floor((Math.random() * 220) + 20).toString();
-      var g = Math.floor((Math.random() * 220) + 20).toString();
-      var b = Math.floor((Math.random() * 220) + 20).toString();
-      var dataset = {
-          label: unique_AP_chart[i].SSID +" - "+unique_AP_chart[i].MAC_ADDRESS.substring(0,5) ,
-          fillColor: "rgba("+r+","+g+","+b+",0)",
-          strokeColor: "rgba("+r+","+g+","+b+",0.9)",
-          pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
-          pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
-          data: values
-      }*/
-      //var dataset = {name: unique_AP_chart[i].SSID, data: values}
-      //console.log(values)
+
+
       finalData_AP.series.push(values)
-      //console.log(dataset)
-      //console.log(finalData_AP.series[i])
   }
 
   for(var i = 0; i<unique_SSID_chart.length; ++i){
@@ -360,45 +310,6 @@ app.get("/data", function(req, res) {
                 label: unique_SSID_chart[i].SSID
             }
       finalData_SSID.push(data)
-
-      /*var values = []
-      if(unique_SSID_chart[i] == undefined){
-        continue  
-      }
-      var channel = unique_SSID_chart[i].CHANNEL
-      channel += 1
-      for(var j = 0 ; j<15; ++j){
-          var currSignal = unique_SSID_chart[i].SIGNAL
-          
-          if(j == channel - 2){
-              values.push(-100)
-          }else if(j == channel - 1){
-              values.push(null)
-          }else if(j ==  channel){
-              values.push(currSignal)
-          }else if(j ==  channel +1){
-              values.push(null)
-          }else if(j ==  channel +2){
-              values.push(-100)
-          }else{
-              values.push(null)
-          }
-      }
-
-      var r = Math.floor((Math.random() * 220) + 20).toString();
-      var g = Math.floor((Math.random() * 220) + 20).toString();
-      var b = Math.floor((Math.random() * 220) + 20).toString();
-      var dataset = {
-          label: unique_SSID_chart[i].SSID  ,
-          fillColor: "rgba("+r+","+g+","+b+",0)",
-          strokeColor: "rgba("+r+","+g+","+b+",0.9)",
-          pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
-          pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
-          data: values
-      }
-      finalData_SSID.datasets.push(dataset)
-      */
-
   }
 
   for(var i = 0; i<unique_AP_chart.length; ++i){
@@ -408,14 +319,11 @@ app.get("/data", function(req, res) {
     unique_SSID_chart[i].count++
   }
 
-  //console.log(finalData.datasets)
   if(groupType == "ssid"){
 
     res.send(finalData_SSID)
   }else{
-    //console.log(finalData_AP.series[15])
     res.json(finalData_AP)
-
   }
   
   finalData_AP = []
@@ -442,8 +350,7 @@ app.get('/', function(req, res, next) {
 app.get('/5', function(req, res, next) {
   res.render('index5', { title: 'Wifi Analyzer' });
 });
-//app.use('/index', routes);
-//app.use('/users', users);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
