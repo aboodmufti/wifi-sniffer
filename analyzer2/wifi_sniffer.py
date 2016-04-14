@@ -1,8 +1,16 @@
 import socket 
 from struct import *
-
+import signal
+import sys
 from subprocess import Popen
 p = Popen(['python channel_changer.py'],shell=True)
+
+
+def signal_handler(signal, frame):
+    global p
+    p.terminate()
+    sys.exit(0)
+signal.signal(signal.SIGINT, signal_handler)
 
 flags = ["TSFT","FLAGS","RATE","CHANNEL","FHSS","ANTENNA_SIGNAL","ANTENNA NOISE","LOCK QUALITY","TX ATTENUATION","DB TX ATTENUATION","DBM TX POWER","ANTENNA","DB ANTENNA SIGNAL","DB ANTENNA NOISE","RX FLAGS", "B15", "B16", "B17", "B18", "MCS","A-MPDU STATUS", "VHT","B22","B23","B24","B25","B26","B27","B28","B29","B30","B30","B31"]
 

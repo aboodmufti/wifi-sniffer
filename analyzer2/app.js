@@ -87,7 +87,7 @@ app.get("/dataTable", function(req, res) {
           continue
       }*/
       if(currData.CHANNEL > 11){
-          console.log(currData)
+          //console.log(currData)
       }
       if(existsMAC[0]){
           //if(currData.SIGNAL < unique_AP_table[oldID]){
@@ -168,16 +168,22 @@ var unique_AP_chart = []
 var unique_SSID_chart = []
 
 app.get("/data", function(req, res) {
-
+/*
   var finalData_AP = {
-        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "],
+        labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," ",36,"",38," ",40," ",42," ",44," ",46,"",48," "," ",149," ",151," ",153," ",155," ",157," ",159," ",161," "," "," ",165," "," "," "],
         datasets: []
     };
-
+    */
+  var finalData_AP = {
+            labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "," "," "," "," ",36,"",38," ",40," ",42," ",44," ",46,"",48," "," ",149," ",151," ",153," ",155," ",157," ",159," ",161," "," "," ",165," "," "," "],
+            series: []
+          }
+/*
   var finalData_SSID = {
         labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "],
         datasets: []
-    };
+    };*/
+    var finalData_SSID = []
     
   var groupType = req.query.grouping
   //var unique_AP_chart = []
@@ -212,9 +218,9 @@ app.get("/data", function(req, res) {
       existsSSID = inUniqueSSID(currData.SSID)
       oldIDMAC = existsMAC[1]
       oldIDSSID = existsSSID[1]
-      if(currData.CHANNEL > 11){
+      /*if(currData.CHANNEL > 11){
           continue
-      }
+      }*/
       if(existsMAC[0]){
           //if(currData.SIGNAL < unique_AP_chart[oldID]){
               unique_AP_chart[oldIDMAC].SIGNAL = currData.SIGNAL
@@ -263,10 +269,45 @@ app.get("/data", function(req, res) {
         continue  
       }
       var channel = unique_AP_chart[i].CHANNEL
-      channel += 1
-      for(var j = 0 ; j<15; ++j){
-          var currSignal = unique_AP_chart[i].SIGNAL
-          
+      //console.log(channel)
+      var currSignal = unique_AP_chart[i].SIGNAL
+      for(var j = 0 ; j<finalData_AP.labels.length; ++j){
+          if(channel < 15){
+            if(finalData_AP.labels[j] == channel){
+              values[j] = currSignal
+              values[j+2] = -100
+              values[j-2] = -100
+            }
+          }else if((channel >30 && channel <= 149) || channel == 157 || channel == 153 || channel > 160){
+            if(finalData_AP.labels[j] == channel){
+              values[j] = currSignal
+              values[j+1] = -100
+              values[j-1] = -100
+            }
+          }else{
+            if(channel == 151){
+              if(finalData_AP.labels[j] == channel){
+                values[j] = currSignal
+                values[j+2] = -100
+                values[j-2] = -100
+              }
+            }else if(channel == 155){
+              if(finalData_AP.labels[j] == channel){
+                values[j] = currSignal
+                values[j+1] = -100
+                values[j-4] = -100
+              }
+            }else if(channel == 159){
+              if(finalData_AP.labels[j] == channel){
+                values[j] = currSignal
+                values[j+1] = -100
+                values[j-2] = -100
+              }
+            }
+          }
+
+
+          /*
           if(j == channel - 2){
               values.push(-100)
           }else if(j == channel - 1){
@@ -279,13 +320,13 @@ app.get("/data", function(req, res) {
               values.push(-100)
           }else{
               values.push(null)
-          }
+          }*/
       }
       /*
         highlightFill: "rgba("+r+","+g+","+b+",0.75)",
         highlightStroke: "rgba("+r+","+g+","+b+",1)",
        * */
-      var r = Math.floor((Math.random() * 220) + 20).toString();
+      /*var r = Math.floor((Math.random() * 220) + 20).toString();
       var g = Math.floor((Math.random() * 220) + 20).toString();
       var b = Math.floor((Math.random() * 220) + 20).toString();
       var dataset = {
@@ -295,13 +336,32 @@ app.get("/data", function(req, res) {
           pointHighlightFill: "rgba("+r+","+g+","+b+",1)",
           pointHighlightStroke: "rgba("+r+","+g+","+b+",1)",
           data: values
-      }
-
-      finalData_AP.datasets.push(dataset)
+      }*/
+      //var dataset = {name: unique_AP_chart[i].SSID, data: values}
+      //console.log(values)
+      finalData_AP.series.push(values)
+      //console.log(dataset)
+      //console.log(finalData_AP.series[i])
   }
 
   for(var i = 0; i<unique_SSID_chart.length; ++i){
-      var values = []
+      if(unique_SSID_chart[i] == undefined){
+        continue  
+      }
+
+      var r = Math.floor((Math.random() * 220) + 20).toString();
+      var g = Math.floor((Math.random() * 220) + 20).toString();
+      var b = Math.floor((Math.random() * 220) + 20).toString();
+
+      var data = {
+                value: unique_SSID_chart[i].SIGNAL,
+                color:"rgba("+r+","+g+","+b+",1)",
+                highlight: "rgba("+r+","+g+","+b+",1)",
+                label: unique_SSID_chart[i].SSID
+            }
+      finalData_SSID.push(data)
+
+      /*var values = []
       if(unique_SSID_chart[i] == undefined){
         continue  
       }
@@ -324,10 +384,7 @@ app.get("/data", function(req, res) {
               values.push(null)
           }
       }
-      /*
-        highlightFill: "rgba("+r+","+g+","+b+",0.75)",
-        highlightStroke: "rgba("+r+","+g+","+b+",1)",
-       * */
+
       var r = Math.floor((Math.random() * 220) + 20).toString();
       var g = Math.floor((Math.random() * 220) + 20).toString();
       var b = Math.floor((Math.random() * 220) + 20).toString();
@@ -340,6 +397,8 @@ app.get("/data", function(req, res) {
           data: values
       }
       finalData_SSID.datasets.push(dataset)
+      */
+
   }
 
   for(var i = 0; i<unique_AP_chart.length; ++i){
@@ -351,9 +410,12 @@ app.get("/data", function(req, res) {
 
   //console.log(finalData.datasets)
   if(groupType == "ssid"){
+
     res.send(finalData_SSID)
   }else{
-    res.send(finalData_AP)
+    //console.log(finalData_AP.series[15])
+    res.json(finalData_AP)
+
   }
   
   finalData_AP = []

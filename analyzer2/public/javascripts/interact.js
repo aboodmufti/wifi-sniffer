@@ -3,7 +3,7 @@ $(function () {
     var ctx = canvas.getContext("2d");
     var refreshButton = $(".scan")
     var myBarChart;
-
+    var newChart;
     
     var table = $("#table")
     var tableHeader = "<table><tr><th>SSID</th><th>Channel</th><th>Signal(dBm)</th><th>Mac Address</th><th>Frequency</th></tr>"
@@ -18,14 +18,60 @@ $(function () {
     function updateChart(){
       var groupType = $('input[name=grouping]:checked', '#groupForm').val()
       $.getJSON( "/data?grouping="+groupType, function( serverData ) {
-          //console.log(serverData)
+          //console.log("length: "+serverData.datasets.length)
           if(myBarChart){
               myBarChart.destroy()
           }
-          myBarChart = new Chart(ctx).Line(serverData, {animation:false,pointDot : false});
+          if(groupType == "ssid"){
+
+            var chartOptions = {
+                    responsive:true,
+                    scaleBeginAtZero:false,
+                    barBeginAtOrigin:true,
+                    scaleOverride: true,
+                    scaleSteps: 9,
+                    scaleStepWidth: 10,
+                    scaleStartValue: -100,
+                    responsive: false,
+                    animation: false
+            }
+
+            myBarChart = new Chart(ctx).PolarArea(serverData,chartOptions);
+          }else{
+            if(newChart){
+              newChart.detach()
+            }/*
+            for(var i = 0; i < serverData.series.length; ++i){
+              var data = []
+              var currData = serverData.series[i].data
+              for(var j = 0; j < currData.length; ++j){
+                if(currData[j] != null){
+                  data[j] = currData[j]
+                }
+              }
+              serverData.series[i].data = data
+            }*/
+            for(var i = 0; i < serverData.series.length; ++i){
+              var data = []
+              var currData = serverData.series[i]
+              for(var j = 0; j < currData.length; ++j){
+                if(currData[j] != null){
+                  data[j] = currData[j]
+                }
+              }
+              serverData.series[i] = data
+            }
+            //console.log(serverData)
+            newChart = new Chartist.Line('.ct-chart', serverData, {
+                      fullWidth: true,
+                      chartPadding: {
+                        right: 40}
+                      });
+            //myBarChart = new Chart(ctx).Line(serverData, {animation:false,pointDot : false});
+          }
       });
       updateTable()
-      updateOTChart()
+      //updateOTChart()
     }
 
     var rounds = 0
@@ -76,6 +122,7 @@ $(function () {
           checkAllRecords(rounds)
           tableContent += "</table>"
           table.html(tableContent)
+          updateChart()
           //updateOTChart()
       });
     }
@@ -126,7 +173,7 @@ $(function () {
     });
 
     updateChart()
-    setInterval(updateTable, 2000);
+    //setInterval(updateTable, 2000);
     refreshButton.click(updateChart)
 
 });

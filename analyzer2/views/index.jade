@@ -2,16 +2,18 @@ extends layout
 
 block header
   script(src="javascripts/jquery-1.12.1.js")
+  
   script(src="javascripts/Chart.js")
+  script(src="javascripts/chartist.js")
   script(src="javascripts/interact.js")
 
 block content
   form#groupForm
-      input(type="radio", name="grouping",value="ssid",checked) 
+      input(type="radio", name="grouping",value="ssid") 
       |group by SSID 
       br
       
-      input(type="radio", name="grouping",value="mac") 
+      input(type="radio", name="grouping",value="mac",checked) 
       |group by MAC Address 
   
   br
@@ -19,7 +21,9 @@ block content
   button.scan Refresh
   div
     canvas(id="myChart", width="400", height="400")
-  
+  div.chart
+    div(class="ct-chart ct-golden-section")
+
   button.scan Refresh
   br
   br
@@ -29,5 +33,5 @@ block content
   br
   br
   div
-    canvas(id="overTimeChart", width="400", height="400")
+    canvas(id="overTimeChart", width="800", height="600")
   div#legend

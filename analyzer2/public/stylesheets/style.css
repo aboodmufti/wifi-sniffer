@@ -11,3 +11,17 @@ a {
 td{
     padding : 10px;
 }
+
+.ct-line {
+
+  /* Control the thikness of your lines */
+  stroke-width: 2px;
+  /* Create a dashed line with a pattern */
+}
+
+/* This selector overrides the points style on line charts. Points on line charts are actually just very short strokes. This allows you to customize even the point size in CSS */
+.ct-point {
+  /* Size of your points */
+  stroke-width: 0px;
+  /* Make your points appear as squares */
+}
