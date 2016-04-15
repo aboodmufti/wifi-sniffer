@@ -25,10 +25,20 @@ var pyshell = new PythonShell('wifi_sniffer.py');
 var chartData = []
 var tableData = []
 var message = ""
+var reset = false
+var moved = true
 pyshell.on('message', function (message) {
     if(message.substr(0,2) == "{\""  && message.substr(-3) == "\" }"){
       try{
         var obj = JSON.parse(message)
+        //console.log(obj.CHANNEL+" |||||||| "+ moved)
+        if(obj.CHANNEL == 1 && moved == true){
+          resetTable()
+          moved = false
+        }
+        if(obj.CHANNEL > 1){
+          moved = true
+        }
         chartData.push(obj)
         tableData.push(obj)
       }catch(e){
@@ -38,17 +48,60 @@ pyshell.on('message', function (message) {
 
 });
 
+function resetTable(){
 
+    tableData = []
+    for(var i = 0; i<unique_AP_table.length; ++i){
+      if(unique_AP_table[i].count >26){
+        unique_AP_table.splice(i,1)
+        console.log("removed")
+      }
+      
+    }
+
+    for(var i = 0; i<unique_SSID_table.length; ++i){
+      if(unique_SSID_table[i].count >26){
+        unique_SSID_table.splice(i,1)
+        console.log("removed")
+      }
+      
+    }
+
+}
 function getMaxOfArray(numArray) {
-    return Math.max.apply(null, numArray);
+    var max = numArray[0];
+    var maxIndex = 0;
+
+    for (var i = 1; i < numArray.length; i++) {
+        if (numArray[i] > max) {
+            maxIndex = i;
+            max = numArray[i];
+        }
+    }
+
+    return [max,maxIndex];
+    //return Math.max.apply(null, numArray);
+}
+
+function getMaxOfArray2(numArray) {
+    var maxSignal = numArray[0].SIGNAL;
+    var max = numArray[0]
+
+    for (var i = 1; i < numArray.length; i++) {
+        if (numArray[i].SIGNAL > maxSignal) {
+            maxSignal = numArray[i].SIGNAL
+            max = numArray[i];
+        }
+    }
+    //console.log(max)
+    return max;
+    //return Math.max.apply(null, numArray);
 }
 
 var unique_AP_table = []
 var unique_SSID_table = []
 app.get("/dataTable", function(req, res) {
-  if(tableData[i] && tableData[i].CHANNEL == 1 ){
-    tableData = []
-  }
+  
 
   var groupType = req.query.grouping
 
@@ -78,13 +131,17 @@ app.get("/dataTable", function(req, res) {
   /*
   This for loop is populating unique ssid and mac addresses
   */
-  for(var i = 0; i<tableData.length; ++i){
-      currData = tableData[i]
+  tableDataTemp = tableData.slice()
+  for(var i = 0; i<tableDataTemp.length; ++i){
+      currData = tableDataTemp[i]
       existsMAC = inUniqueMAC(currData.MAC_ADDRESS)
       existsSSID = inUniqueSSID(currData.SSID)
       oldIDMAC = existsMAC[1]
       oldIDSSID = existsSSID[1]
 
+      if(!currData){
+        continue
+      }
       if(existsMAC[0]){
             unique_AP_table[oldIDMAC].SIGNAL = currData.SIGNAL
             unique_AP_table[oldIDMAC].count = 0
@@ -97,36 +154,40 @@ app.get("/dataTable", function(req, res) {
           unique_SSID_table[oldIDSSID].count = 0
 
           if(allSignals[unique_SSID_table[oldIDSSID].SSID]){
-            allSignals[unique_SSID_table[oldIDSSID].SSID].push(currData.SIGNAL)
+            allSignals[unique_SSID_table[oldIDSSID].SSID].push(currData)
           }else{
-            allSignals[unique_SSID_table[oldIDSSID].SSID] = [currData.SIGNAL]
+            allSignals[unique_SSID_table[oldIDSSID].SSID] = [currData]
           }
-
-          unique_SSID_table[oldIDSSID].SIGNAL = getMaxOfArray(allSignals[unique_SSID_table[oldIDSSID].SSID])
+          var max = getMaxOfArray2(allSignals[unique_SSID_table[oldIDSSID].SSID])
+          unique_SSID_table[oldIDSSID] = max
+          /*
+          if(allSignals[unique_SSID_table[oldIDSSID].SSID]){
+            allSignals[unique_SSID_table[oldIDSSID].SSID].signals.push(currData.SIGNAL)
+            allSignals[unique_SSID_table[oldIDSSID].SSID].aps.push(currData.MAC_ADDRESS)
+            allSignals[unique_SSID_table[oldIDSSID].SSID].channels.push(currData.CHANNEL)
+            allSignals[unique_SSID_table[oldIDSSID].SSID].frequencies.push(currData.FREQUENCY)
+          }else{
+            allSignals[unique_SSID_table[oldIDSSID].SSID] = {}
+            allSignals[unique_SSID_table[oldIDSSID].SSID].signals = [currData.SIGNAL]
+            allSignals[unique_SSID_table[oldIDSSID].SSID].aps = [currData.MAC_ADDRESS]
+            allSignals[unique_SSID_table[oldIDSSID].SSID].channels = [currData.CHANNEL]
+            allSignals[unique_SSID_table[oldIDSSID].SSID].frequencies = [currData.FREQUENCY]
+          }
+          var max = getMaxOfArray(allSignals[unique_SSID_table[oldIDSSID].SSID].signals)
+          unique_SSID_table[oldIDSSID].SIGNAL = max[0]
+          unique_SSID_table[oldIDSSID].MAC_ADDRESS = allSignals[unique_SSID_table[oldIDSSID].SSID].aps[max[1]]
+          unique_SSID_table[oldIDSSID].CHANNEL = allSignals[unique_SSID_table[oldIDSSID].SSID].channels[max[1]]
+          unique_SSID_table[oldIDSSID].FREQUENCY = allSignals[unique_SSID_table[oldIDSSID].SSID].frequencies[max[1]]*/
       }else{
             currData.count = 0
             unique_SSID_table.push(currData)
       }   
   }
-
+  //console.log(unique_SSID_table)
   /*
   These for loops are eliminating all unique ssid or AP that have been there for 10 rounds
   */
-  for(var i = 0; i<unique_AP_table.length; ++i){
-    if(unique_AP_table[i].count >=10){
-      unique_AP_table.splice(i,1)
-      console.log("removed")
-    }
-    
-  }
-
-  for(var i = 0; i<unique_SSID_table.length; ++i){
-    if(unique_SSID_table[i].count >=10){
-      unique_SSID_table.splice(i,1)
-      console.log("removed")
-    }
-    
-  }
+  
 
   function sortSignal(a,b){
     if(a.SIGNAL < b.SIGNAL){
@@ -139,7 +200,7 @@ app.get("/dataTable", function(req, res) {
 
   //sort based on signal
   unique_AP_table = unique_AP_table.sort(sortSignal)
-
+  unique_SSID_table = unique_SSID_table.sort(sortSignal)
   //incrementing count for every unique ssid and AP
   for(var i = 0; i<unique_AP_table.length; ++i){
     unique_AP_table[i].count++
@@ -161,7 +222,24 @@ var unique_AP_chart = []
 var unique_SSID_chart = []
 
 app.get("/data", function(req, res) {
+  if(chartData[i] && chartData[i].CHANNEL == 1 ){
+    chartData = []
+    for(var i = 0; i<unique_AP_chart.length; ++i){
+      if(unique_AP_chart[i].count >26){
+        unique_AP_chart.splice(i,1)
+        console.log("removed")
+      }
+      
+    }
 
+    for(var i = 0; i<unique_SSID_chart.length; ++i){
+      if(unique_SSID_chart[i].count >26){
+        unique_SSID_chart.splice(i,1)
+        console.log("removed")
+      }
+      
+    }
+  }
   var finalData_AP = {
             labels: [" "," ",1,2,3,4,5,6,7,8,9,10,11," "," "," "," "," "," ",36,"",38," ",40," ",42," ",44," ",46,"",48," "," "," "," "," ",149," ",151," ",153," ",155," ",157," ",159," ",161," "," "," ",165," "," "," "],
             series: []
@@ -196,55 +274,59 @@ app.get("/data", function(req, res) {
   var allSignalsSSD = {}
   for(var i = 0; i<chartData.length; ++i){
       currData = chartData[i]
-      //exists = inUnique(currData.SSID)
       existsMAC = inUniqueMAC(currData.MAC_ADDRESS)
       existsSSID = inUniqueSSID(currData.SSID)
       oldIDMAC = existsMAC[1]
       oldIDSSID = existsSSID[1]
-      /*if(currData.CHANNEL > 11){
-          continue
-      }*/
+
       if(existsMAC[0]){
-          //if(currData.SIGNAL < unique_AP_chart[oldID]){
               unique_AP_chart[oldIDMAC].SIGNAL = currData.SIGNAL
               unique_AP_chart[oldIDMAC].count = 0
-          //}
       }else{
-          //if(currData != undefined){
             currData.count = 0
             unique_AP_chart.push(currData)
-          //}
       }
 
       if(existsSSID[0]){
           unique_SSID_chart[oldIDSSID].count = 0
+          /*
+          if(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID]){
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].signals.push(currData.SIGNAL)
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].aps.push(currData.MAC_ADDRESS)
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].channels.push(currData.CHANNEL)
+          }else{
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID] = {}
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].signals = [currData.SIGNAL]
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].aps = [currData.MAC_ADDRESS]
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].channels = [currData.CHANNEL]
+          }
+          var max = getMaxOfArray(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].signals)
+          unique_SSID_chart[oldIDSSID].SIGNAL = max[0]
+          unique_SSID_chart[oldIDSSID].MAC_ADDRESS = allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].aps[max[1]]
+          unique_SSID_chart[oldIDSSID].CHANNEL = allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].channels[max[1]]
+          */
+          if(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID]){
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].push(currData)
+          }else{
+            allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID] = [currData]
+          }
+          var max = getMaxOfArray2(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID])
+          unique_SSID_chart[oldIDSSID] = max
+          /*
           if(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID]){
             allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID].push(currData.SIGNAL)
           }else{
             allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID] = [currData.SIGNAL]
           }
           unique_SSID_chart[oldIDSSID].SIGNAL = getMaxOfArray(allSignalsSSD[unique_SSID_chart[oldIDSSID].SSID])
+          */
       }else{
             currData.count = 0
             unique_SSID_chart.push(currData)
       }   
   }
   
-  for(var i = 0; i<unique_AP_chart.length; ++i){
-    if(unique_AP_chart[i].count >=10){
-      unique_AP_chart.splice(i,1)
-      console.log("removed")
-    }
-    
-  }
 
-  for(var i = 0; i<unique_SSID_chart.length; ++i){
-    if(unique_SSID_chart[i].count >=10){
-      unique_SSID_chart.splice(i,1)
-      console.log("removed")
-    }
-    
-  }
   
   for(var i = 0; i<unique_AP_chart.length; ++i){
       var values = []

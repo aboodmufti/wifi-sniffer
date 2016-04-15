@@ -10,9 +10,9 @@ def change_channel():
     global index
     command = "iwconfig wlan0 channel %i" %allChannels[index%26]
     call(command,shell=True) 
-    #print "Channel : %i" %allChannels[index%26]
+    print "Channel : %i" %allChannels[index%26]
     index += 1
-    s.enter(1, 1, change_channel, ())
+    s.enter(0.2, 1, change_channel, ())
     s.run()
 
 s.enter(2, 1, change_channel, ())

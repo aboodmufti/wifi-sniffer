@@ -16,15 +16,20 @@ block content
       input(type="radio", name="grouping",value="mac",checked) 
       |group by MAC Address 
   
+  p#recom
   br
   br
   button.scan Refresh
   div
     canvas(id="myChart", width="400", height="400")
-  div.chart
+  div#chart
     div(class="ct-chart ct-golden-section")
 
   button.scan Refresh
+  
+  
+  //div
+    canvas(id="overTimeChart", width="800", height="600")
   br
   br
   div#table
@@ -32,6 +37,5 @@ block content
   button.scan Refresh
   br
   br
-  div
-    canvas(id="overTimeChart", width="800", height="600")
+  
   div#legend
